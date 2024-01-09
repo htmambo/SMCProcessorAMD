@@ -110,7 +110,6 @@ class SMCProcessorAMD : public IOService {
     static constexpr SMC_KEY KeyTCxT(size_t i) { return SMC_MAKE_IDENTIFIER('T','C',KeyIndexes[i],'T'); }
     static constexpr SMC_KEY KeyTCxp(size_t i) { return SMC_MAKE_IDENTIFIER('T','C',KeyIndexes[i],'p'); }
     
-    
 public:
     virtual bool init(OSDictionary *dictionary = 0) override;
     virtual void free(void) override;
