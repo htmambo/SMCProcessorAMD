@@ -22,10 +22,9 @@ public:
     AMDSupportVsmcValue(SMCProcessorAMD *provider, size_t package, size_t core=0) : provider(provider), package(package), core(core) {}
 };
 
-class FREQ        : public FreqKey { protected: SMC_RESULT readAccess() override; };
-class TempPackage : public AMDSupportVsmcValue { using AMDSupportVsmcValue::AMDSupportVsmcValue; protected: SMC_RESULT readAccess() override; };
-class TempCore    : public AMDSupportVsmcValue { using AMDSupportVsmcValue::AMDSupportVsmcValue; protected: SMC_RESULT readAccess() override; };
-
+class FREQ         : public FreqKey { protected: SMC_RESULT readAccess() override; };
+class TempPackage  : public AMDSupportVsmcValue { using AMDSupportVsmcValue::AMDSupportVsmcValue; protected: SMC_RESULT readAccess() override; };
+class TempCore     : public AMDSupportVsmcValue { using AMDSupportVsmcValue::AMDSupportVsmcValue; protected: SMC_RESULT readAccess() override; };
 class EnergyPackage: public AMDSupportVsmcValue { using AMDSupportVsmcValue::AMDSupportVsmcValue; protected: SMC_RESULT readAccess() override; };
 
 #endif /* KeyImplementations_hpp */

@@ -34,6 +34,9 @@ bool SMCProcessorAMD::setupKeysVsmc(){
     
     bool suc = true;
    
+    
+    suc &= VirtualSMCAPI::addKey(KeyFR0X, vsmcPlugin.data, VirtualSMCAPI::valueWithUint32(400, new FREQ(), SMC_KEY_ATTRIBUTE_PRIVATE_WRITE|SMC_KEY_ATTRIBUTE_WRITE|SMC_KEY_ATTRIBUTE_READ));
+    
     //Read watt cpu
     suc &= VirtualSMCAPI::addKey(KeyPCPR, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new EnergyPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyPCPT, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new EnergyPackage(this, 0)));
@@ -50,11 +53,10 @@ bool SMCProcessorAMD::setupKeysVsmc(){
     suc &= VirtualSMCAPI::addKey(KeyTCxT(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxp(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     
-    suc &= VirtualSMCAPI::addKey(KeyFR0X, vsmcPlugin.data, VirtualSMCAPI::valueWithUint32(400, new FREQ(), SMC_KEY_ATTRIBUTE_PRIVATE_WRITE|SMC_KEY_ATTRIBUTE_WRITE|SMC_KEY_ATTRIBUTE_READ));
     
      
-        if(!suc){
-        IOLog("SMCProcessorAMD::setupKeysVsmc: VirtualSMCAPI::addKey returned false. \n");
+    if(!suc){
+    IOLog("SMCProcessorAMD::setupKeysVsmc: VirtualSMCAPI::addKey returned false. \n");
     }
     
     return suc;
@@ -337,22 +339,3 @@ EXPORT extern "C" kern_return_t ADDPR(kern_stop)(kmod_info_t *, void *) {
     // It is not safe to unload VirtualSMC plugins!
     return KERN_FAILURE;
 }
-
-
-#ifdef __MAC_10_15
-
-// macOS 10.15 adds Dispatch function to all OSObject instances and basically
-// every header is now incompatible with 10.14 and earlier.
-// Here we add a stub to permit older macOS versions to link.
-// Note, this is done in both kern_util and plugin_start as plugins will not link
-// to Lilu weak exports from vtable.
-
-kern_return_t WEAKFUNC PRIVATE OSObject::Dispatch(const IORPC rpc) {
-    PANIC("util", "OSObject::Dispatch smcproc stub called");
-}
-
-kern_return_t WEAKFUNC PRIVATE OSMetaClassBase::Dispatch(const IORPC rpc) {
-    PANIC("util", "OSMetaClassBase::Dispatch smcproc stub called");
-}
-
-#endif
