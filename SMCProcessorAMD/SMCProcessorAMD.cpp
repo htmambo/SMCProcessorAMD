@@ -1,5 +1,6 @@
 #include "SMCProcessorAMD.hpp"
-
+#include <Headers/kern_devinfo.hpp>
+//#include <IOKit/IOKitLib.h>
 
 OSDefineMetaClassAndStructors(SMCProcessorAMD, IOService);
 
@@ -38,22 +39,55 @@ bool SMCProcessorAMD::setupKeysVsmc(){
     suc &= VirtualSMCAPI::addKey(KeyPCPR, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new EnergyPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyPCPT, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new EnergyPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyPCTR, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new EnergyPackage(this, 0)));
-    
+    VirtualSMCAPI::addKey(KeyVCxC(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp3c, new EnergyPackage(this, 0)));
+
     // Cpu TEMP
-    //suc &= VirtualSMCAPI::addKey(KeyTCxD(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
+    suc &= VirtualSMCAPI::addKey(KeyTCxD(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxE(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxF(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxG(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78));
-    //suc &= VirtualSMCAPI::addKey(KeyTCxH(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
+    suc &= VirtualSMCAPI::addKey(KeyTCxH(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxJ(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78));
     suc &= VirtualSMCAPI::addKey(KeyTCxP(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxT(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
     suc &= VirtualSMCAPI::addKey(KeyTCxp(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempPackage(this, 0)));
-     
-        if(!suc){
+
+    size_t coreOffset = 0;
+    auto model = BaseDeviceInfo::get().modelIdentifier;
+    auto isdigit = [](auto l) { return l >= '0' && l <= '9'; };
+    bool isMob = !strncmp(model, "MacBook", strlen("MacBook"));
+//    if(isMob) {
+//    VirtualSMCAPI::addKey(KeyBSIn, vsmcPlugin.data, VirtualSMCAPI::valueWithUint8(0, new BSIn(this, 0)));
+        VirtualSMCAPI::addKey(KeyBSIn, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeUint8, new BSIn(this, 0), SMC_KEY_ATTRIBUTE_READ | SMC_KEY_ATTRIBUTE_WRITE | SMC_KEY_ATTRIBUTE_ATOMIC));
+//    }
+
+    for(int core = 0; core <= this->totalNumberOfPhysicalCores; core++){
+        VirtualSMCAPI::addKey(KeyTCxC(core), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, core)));
+        VirtualSMCAPI::addKey(KeyTCxc(core), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, core)));
+        VirtualSMCAPI::addKey(KeyPCxc(core), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp96, new TempCore(this, core)));
+    }
+
+    VirtualSMCAPI::addKey(KeyTGxD(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+    VirtualSMCAPI::addKey(KeyTGxP(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+    VirtualSMCAPI::addKey(KeyTGxd(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+    VirtualSMCAPI::addKey(KeyTGxp(0), vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+    VirtualSMCAPI::addKey(KeyTGDD, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+    // 核显温度
+    VirtualSMCAPI::addKey(KeyTCGC, vsmcPlugin.data, VirtualSMCAPI::valueWithSp(0, SmcKeyTypeSp78, new TempCore(this, 0)));
+
+
+    VirtualSMCAPI::addKey(KeyBSIn, vsmcPlugin.data, VirtualSMCAPI::valueWithUint8(
+        false, new BSIn(this, 0),
+        SMC_KEY_ATTRIBUTE_READ | SMC_KEY_ATTRIBUTE_WRITE | SMC_KEY_ATTRIBUTE_ATOMIC));
+    VirtualSMCAPI::addKey(KeyBDVT, vsmcPlugin.data, VirtualSMCAPI::valueWithFlag(
+        false, new BDVT(this, 0),
+        SMC_KEY_ATTRIBUTE_READ | SMC_KEY_ATTRIBUTE_WRITE | SMC_KEY_ATTRIBUTE_ATOMIC));
+
+    if(!suc){
         IOLog("SMCProcessorAMD::setupKeysVsmc: VirtualSMCAPI::addKey returned false. \n");
     }
-    
+    qsort(const_cast<VirtualSMCKeyValue *>(vsmcPlugin.data.data()), vsmcPlugin.data.size(), sizeof(VirtualSMCKeyValue), VirtualSMCKeyValue::compare);
+
     return suc;
 }
 
@@ -200,8 +234,7 @@ bool SMCProcessorAMD::start(IOService *provider){
     workLoop = IOWorkLoop::workLoop();
     timerEventSource = IOTimerEventSource::timerEventSource(this, [](OSObject *object, IOTimerEventSource *sender) {
         SMCProcessorAMD *provider = OSDynamicCast(SMCProcessorAMD, object);
-        
-        
+
         mp_rendezvous_no_intrs([](void *obj) {
             auto provider = static_cast<SMCProcessorAMD*>(obj);
             
@@ -230,8 +263,55 @@ bool SMCProcessorAMD::start(IOService *provider){
     
     IOLog("SMCProcessorAMD::start registering VirtualSMC keys...\n");
     setupKeysVsmc();
-    
+    // 初始化时是否关闭CPB
+    if(propertyExists("CPBStatus")) {
+        OSBoolean * customValue = OSDynamicCast(OSBoolean, getProperty("CPBStatus"));
+        if (customValue != NULL && customValue->getValue() == FALSE) {
+            setCPBState(FALSE);
+        }
+    }
     return success;
+}
+
+void SMCProcessorAMD::setCPBState(bool enabled){
+    IOLog("AMDCPUSupport::setCPBState enabled is %s\n", enabled?"true":"false");
+
+    if(!cpbSupported) return;
+    
+    uint64_t hwConfig;
+    if(!read_msr(kHWCR, &hwConfig))
+        panic("AMDCPUSupport::setCPBState: wtf?");
+    
+    if(enabled){
+        hwConfig &= ~(1 << 25);
+    } else {
+        hwConfig |= (1 << 25);
+    }
+    
+    //A bit hacky but at least works for now.
+    void* args[] = {this, &hwConfig};
+    
+    mp_rendezvous(nullptr, [](void *obj) {
+        auto v = static_cast<uint64_t*>(*((uint64_t**)obj+1));
+        auto provider = static_cast<SMCProcessorAMD*>(obj);
+        provider->write_msr(kHWCR, *v);
+    }, nullptr, args);
+}
+
+bool SMCProcessorAMD::getCPBState(){
+    uint64_t hwConfig;
+    if(!read_msr(kHWCR, &hwConfig))
+        panic("AMDCPUSupport::start: wtf?");
+    
+    return !((hwConfig >> 25) & 0x1);
+}
+
+bool SMCProcessorAMD::write_msr(uint32_t addr, uint64_t value){
+    //Fall back with unsafe method
+    wrmsr64(addr, value);
+    
+    //If failed, we've already panic and starting reboot. So just return true.
+    return true;
 }
 
 void SMCProcessorAMD::stop(IOService *provider){
@@ -269,10 +349,23 @@ void SMCProcessorAMD::updateClockSpeed(){
     uint64_t msr_value_buf = 0;
     bool err = !read_msr(kMSR_HARDWARE_PSTATE_STATUS, &msr_value_buf);
     if(err) IOLog("SMCProcessorAMD::updateClockSpeed: failed somewhere");
-            
-//    IOLog("SMCProcessorAMD::updateClockSpeed: i am CPU %hhu, physical %hhu\n", package, physical);
-            
-    MSR_HARDWARE_PSTATE_STATUS_perCore[physical] = msr_value_buf;
+    
+    //Convert register value to clock speed.
+    uint32_t eax = (uint32_t)(msr_value_buf & 0xffffffff);
+    
+    // MSRC001_0293
+    // CurHwPstate [24:22]
+    // CurCpuVid [21:14]
+    // CurCpuDfsId [13:8]
+    // CurCpuFid [7:0]
+    float curCpuDfsId = (float)((eax >> 8) & 0x3f);
+    float curCpuFid = (float)(eax & 0xff);
+    
+    float clock = curCpuFid / curCpuDfsId * 2.0f;
+
+    // IOLog("SMCProcessorAMD::updateClockSpeed: i am CPU %hhu, physical %hhu, %llu(%f)\n", package, physical, msr_value_buf, clock);
+
+    MSR_HARDWARE_PSTATE_STATUS_perCore[physical] = clock;
 }
 
 void SMCProcessorAMD::updatePackageTemp(){
